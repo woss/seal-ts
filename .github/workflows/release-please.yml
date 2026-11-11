@@ -15,30 +15,13 @@ concurrency:
 jobs:
   release-please:
     runs-on: ubuntu-latest
-    outputs:
-      releases_created: ${{ steps.rp.outputs.releases_created }}
-      tag_name: ${{ steps.rp.outputs.tag_name }}
     steps:
       - uses: googleapis/release-please-action@v5
         id: rp
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-  # GITHUB_TOKEN tag pushes do not trigger workflows. npm trusted publishing
-  # (OIDC) does not work under workflow_call either, while direct runs —
-  # tag-push and workflow_dispatch — always published. So dispatch
-  # release.yml explicitly.
-  publish:
-    needs: release-please
-    if: fromJSON(needs.release-please.outputs.releases_created) == true
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-      contents: read
-    steps:
-      - name: Dispatch release.yml
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-          TAG_NAME: ${{ needs.release-please.outputs.tag_name }}
-        run: gh workflow run release.yml --ref main -f tag_name="$TAG_NAME"
+# Publishing is NOT auto-dispatched: runs triggered by github-actions[bot]
+# fail both registries (JSR actorNotScopeMember, npm OIDC denied — verified
+# on v0.1.0 and v0.2.0). After merging a release PR, run:
+#   gh workflow run release.yml -f tag_name=vX.Y.Z
