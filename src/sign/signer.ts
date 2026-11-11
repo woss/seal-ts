@@ -28,6 +28,7 @@ interface SealApi {
 const sealGlobal = globalThis as unknown as { SEAL?: SealApi };
 const SEAL = sealGlobal.SEAL as SealApi;
 
+/** Options for {@link sealSign}: identity, key, timestamp, and encodings. */
 export interface SealSignOptions {
   /** Domain whose DNS TXT record publishes the public key (d=). */
   domain: string;
@@ -43,6 +44,7 @@ export interface SealSignOptions {
   sigFormat?: 'base64' | 'hex';
 }
 
+/** Result of a successful {@link sealSign} call: the record string and the embedded container. */
 export interface SealSignature {
   /** The plain `<seal ... />` record string. */
   record: string;
