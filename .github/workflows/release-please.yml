@@ -19,9 +19,14 @@ jobs:
       - uses: googleapis/release-please-action@v5
         id: rp
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # RELEASE_PAT (fine-grained, contents+PRs write): the tag created by
+          # this run is pushed under the PAT owner's identity, so the tag-push
+          # run of release.yml has a human actor. GITHUB_TOKEN tags push as
+          # github-actions[bot] and JSR trusted publishing rejects bot actors
+          # (actorNotScopeMember — verified on v0.1.0 and v0.2.0).
+          token: ${{ secrets.RELEASE_PAT }}
 
-# Publishing is NOT auto-dispatched: runs triggered by github-actions[bot]
-# fail both registries (JSR actorNotScopeMember, npm OIDC denied — verified
-# on v0.1.0 and v0.2.0). After merging a release PR, run:
+# With RELEASE_PAT, merging the release PR is the only manual step: the tag is
+# pushed under the PAT owner's identity, release.yml fires on the tag event and
+# publishes to npm + JSR as a human actor. Fallback only (e.g. PAT expired):
 #   gh workflow run release.yml -f tag_name=vX.Y.Z
