@@ -10,15 +10,11 @@
     "moduleResolution": "node16",
     "target": "ES2022",
     "lib": ["ES2022", "DOM"],
-    "declaration": true,
-    "declarationMap": true,
-    "noEmit": false,
-    "emitDeclarationOnly": false,
+    "noEmit": true,
     "allowImportingTsExtensions": false,
-    "outDir": "./dist",
     "types": ["node"],
-    "tsBuildInfoFile": "./temp/.tsbuildinfo"
+    "rootDir": "src"
   },
-  "include": ["src", "src/**/*.ts"],
-  "exclude": []
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
 }
