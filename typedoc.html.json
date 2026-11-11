@@ -1,0 +1,20 @@
+{
+  "entryPoints": ["src/index.ts"],
+  "entryPointStrategy": "resolve",
+  "out": "docs/typedoc-html",
+  "tsconfig": "tsconfig.json",
+  "readme": "README.md",
+  "name": "@woss/seal-ts",
+  "includeVersion": true,
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "categorizeByGroup": true,
+  "defaultCategory": "Core",
+  "navigationLinks": {
+    "GitHub": "https://github.com/woss/seal-ts",
+    "npm": "https://www.npmjs.com/package/@woss/seal-ts"
+  },
+  "sort": ["source-order"],
+  "searchInComments": true
+}
