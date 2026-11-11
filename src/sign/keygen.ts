@@ -1,5 +1,6 @@
 import { exportPkcs8B64, exportSpkiB64, type SealKeyAlg } from './keyutil.js';
 
+/** A generated SEAL signing key pair: private key for signing, public key for DNS publication. */
 export interface SealKeyPair {
   alg: SealKeyAlg;
   /** base64 PKCS#8 private key — store as SEAL_SIGNING_KEY */

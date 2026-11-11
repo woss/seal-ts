@@ -3,14 +3,17 @@
  * for SEAL signing keys — inverses of the vendored validator's key handling.
  */
 
+/** Encode bytes as standard base64 (RFC 4648). */
 export function toB64(data: Uint8Array): string {
   return Buffer.from(data).toString('base64');
 }
 
+/** Decode a base64 string back to raw bytes. */
 export function fromB64(s: string): Uint8Array {
   return new Uint8Array(Buffer.from(s, 'base64'));
 }
 
+/** Signing key algorithm: `rsa` (RSASSA-PKCS1-v1_5/SHA-256, 2048-bit) or `ecdsa` (P-256/SHA-256). */
 export type SealKeyAlg = 'rsa' | 'ecdsa';
 
 /**
