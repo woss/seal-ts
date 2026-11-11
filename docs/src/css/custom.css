@@ -1,0 +1,7 @@
+:root {
+  --ifm-code-font-size: 95%;
+}
+
+[data-theme='dark'] {
+  --ifm-code-font-size: 95%;
+}

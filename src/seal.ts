@@ -7,7 +7,7 @@ export interface SealParsedRecord {
   fields: Record<string, string> & { _pBin?: Uint8Array; _pkdBin?: Uint8Array };
   /** Offset of the record start within the scanned buffer. */
   recStart: number;
-  /** Length of the record (relative, like @RecEnd in the C reference). */
+  /** Length of the record (relative, like `` `@RecEnd` `` in the C reference). */
   recEnd: number;
   /** Absolute offsets of the s= value, or -1 when the record has no s= field. */
   rawSigStart: number;

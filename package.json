@@ -43,6 +43,9 @@
     "build": "rslib build",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.tests.json",
     "ci": "pnpm run lint",
+    "docs:api:html": "typedoc --options typedoc.html.json",
+    "docs:dev": "pnpm --dir docs start",
+    "docs:build": "pnpm docs:api:html && rm -rf docs/static/typedoc && mkdir -p docs/static && cp -R docs/typedoc-html docs/static/typedoc && pnpm --dir docs build",
     "lint": "eslint ./src --cache --cache-location temp/eslint/",
     "lint:fix": "eslint ./src --fix --cache --cache-location temp/eslint/",
     "test": "vitest run",
@@ -58,6 +61,7 @@
     "eslint-plugin-simple-import-sort": "12.1.1",
     "typescript": "5.8.3",
     "typescript-eslint": "8.46.1",
+    "typedoc": "^0.28.20",
     "vitest": "5.0.3"
   }
 }

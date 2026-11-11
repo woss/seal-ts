@@ -5,7 +5,7 @@
  * Sign side: spec-correct TypeScript signer producing records the
  * vendored validator authenticates byte-exactly.
  */
-export type { SealParsedRecord, SealValidateOptions, SealValidationResult, SealValidator } from './seal.js';
+export type { SealDnsOverride, SealParsedRecord, SealValidateOptions, SealValidationResult, SealValidator } from './seal.js';
 export { seal } from './seal.js';
 export type { SealKeyPair } from './sign/keygen.js';
 export { generateSealKeyPair } from './sign/keygen.js';
