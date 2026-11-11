@@ -1,0 +1,134 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release tag to publish (e.g. v0.1.0)'
+        type: string
+        required: true
+
+env:
+  # Tag-push runs use the pushed ref; workflow_dispatch runs use the input.
+  TAG_NAME: ${{ inputs.tag_name || github.ref_name }}
+
+permissions:
+  contents: write
+
+jobs:
+  # ---------- quality gates ----------
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.TAG_NAME }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+      - run: pnpm install --frozen-lockfile
+      - name: Version sync (tag vs package.json / jsr.json)
+        run: |
+          TAG="${TAG_NAME#v}"
+          for f in package.json jsr.json; do
+            CFG=$(node -p "require('./$f').version")
+            if [ "$TAG" != "$CFG" ]; then
+              echo "tag v$TAG does not match $f version $CFG"; exit 1
+            fi
+          done
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Full test suite
+        run: pnpm test
+      - name: Build
+        run: pnpm build
+      - name: Changelog section exists for tag
+        run: |
+          VERSION="${TAG_NAME#v}"
+          grep -q "^## \[$VERSION\]" CHANGELOG.md || {
+            echo "CHANGELOG.md has no '## [$VERSION]' section — add one before tagging"; exit 1
+          }
+
+  # ---------- publishing ----------
+  publish-npm:
+    needs: gates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.TAG_NAME }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Upgrade npm (trusted publishing needs >= 11.5.1)
+        run: npm install -g npm@latest
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Publish package
+        run: |
+          PKG=$(node -p "require('./package.json').name")
+          VER=$(node -p "require('./package.json').version")
+          if npm view "$PKG@$VER" version > /dev/null 2>&1; then
+            echo "$PKG@$VER already published — skipping"
+          else
+            npm publish --access public --provenance
+          fi
+
+  publish-jsr:
+    needs: gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.TAG_NAME }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+      - run: pnpm install --frozen-lockfile
+      - name: Publish to JSR
+        run: npx jsr@latest publish --verbose
+
+  github-release:
+    needs: gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.TAG_NAME }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Package dist tarball
+        run: tar czf "seal-ts-${TAG_NAME}.tar.gz" dist package.json jsr.json LICENSE README.md
+      - name: Extract changelog section
+        run: |
+          VERSION="${TAG_NAME#v}"
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" { found=1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          grep -q . release-notes.md || { echo "empty changelog section for $VERSION"; exit 1; }
+      - name: Attach to release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          files: seal-ts-*.tar.gz
+          body_path: release-notes.md
