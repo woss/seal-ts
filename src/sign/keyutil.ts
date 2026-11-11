@@ -3,14 +3,17 @@
  * for SEAL signing keys — inverses of the vendored validator's key handling.
  */
 
-/** Encode bytes as standard base64 (RFC 4648). */
+/** Encode bytes as standard base64 (RFC 4648) — ES2026 Uint8Array method, universal in browsers/Deno/Node 24+. */
 export function toB64(data: Uint8Array): string {
-  return Buffer.from(data).toString('base64');
+  return data.toBase64();
 }
 
-/** Decode a base64 string back to raw bytes. */
+/** Decode base64 back to bytes — tolerates PEM line-wrapping and the base64url alphabet (`-`/`_`). */
 export function fromB64(s: string): Uint8Array {
-  return new Uint8Array(Buffer.from(s, 'base64'));
+  const clean = s.replace(/\s+/g, '');
+  return clean.includes('-') || clean.includes('_')
+    ? Uint8Array.fromBase64(clean, { alphabet: 'base64url', lastChunkHandling: 'loose' })
+    : Uint8Array.fromBase64(clean, { lastChunkHandling: 'loose' });
 }
 
 /** Signing key algorithm: `rsa` (RSASSA-PKCS1-v1_5/SHA-256, 2048-bit) or `ecdsa` (P-256/SHA-256). */

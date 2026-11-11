@@ -258,7 +258,7 @@ export async function sealSign(container: Uint8Array, opts: SealSignOptions): Pr
   // Pass 2: real signature, same insertion point. Tail bytes between the
   // s= value and EOF are fixed text and windows are EOF-anchored, so a
   // different signature length than the placeholder's is safe.
-  const sigValue = opts.sigFormat === 'hex' ? Buffer.from(signature).toString('hex') : toB64(signature);
+  const sigValue = opts.sigFormat === 'hex' ? signature.toHex() : toB64(signature);
   const record = buildRecord(opts.domain, alg, opts.id, ts, sigValue, spec, sf);
   const final = embed(container, record);
   return { record, embedded: final.bytes, format: formatName };
