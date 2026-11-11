@@ -4,6 +4,6 @@
   "compilerOptions": {
     "rootDir": "."
   },
-  "include": ["src", "rslib.config.ts"],
+  "include": ["src", "rslib.config.ts", "tests-deno", "tests-bun"],
   "exclude": []
 }
