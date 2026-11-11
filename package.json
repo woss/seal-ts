@@ -1,0 +1,67 @@
+{
+  "name": "@woss/seal-ts",
+  "version": "0.1.0",
+  "author": "daniel@woss.io",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./sign/*": {
+      "types": "./dist/sign/*.d.ts",
+      "import": "./dist/sign/*.js",
+      "development": "./src/sign/*.ts"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js",
+      "development": "./src/*.ts"
+    },
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "development": "./src/index.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/woss/seal-ts.git"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@10.28.2",
+  "scripts": {
+    "build": "rslib build",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.tests.json",
+    "ci": "pnpm run lint",
+    "docs:api:html": "typedoc --options typedoc.html.json",
+    "docs:dev": "pnpm --dir docs start",
+    "docs:build": "pnpm docs:api:html && rm -rf docs/static/typedoc && mkdir -p docs/static && cp -R docs/typedoc-html docs/static/typedoc && pnpm --dir docs build",
+    "lint": "eslint ./src --cache --cache-location temp/eslint/",
+    "lint:fix": "eslint ./src --fix --cache --cache-location temp/eslint/",
+    "test": "vitest run",
+    "test:cov": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@rslib/core": "0.17.1",
+    "@eslint/js": "9.38.0",
+    "@types/node": "24.10.0",
+    "@vitest/coverage-v8": "5.0.3",
+    "eslint": "9.34.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-simple-import-sort": "12.1.1",
+    "typescript": "5.8.3",
+    "typescript-eslint": "8.46.1",
+    "typedoc": "^0.28.20",
+    "vitest": "5.0.3"
+  }
+}
