@@ -214,18 +214,15 @@ export async function main({ cwd = process.cwd(), dryRun = false } = {}) {
   }
 
   // Main first (branch-protection failures surface before the tag exists), tag second.
-  const origin = sh("git remote get-url origin", { cwd });
-  const token = process.env.GH_TOKEN;
-  if (!token) {
-    throw new Error("GH_TOKEN not set");
-  }
-  const pushUrl = origin.replace(
-    /^https:\/\//,
-    `https://x-access-token:${encodeURIComponent(token)}@`,
-  );
+  // Both pushes authenticate via the credential actions/checkout persists from
+  // its `token:` input (RELEASE_PAT — human actor, required by JSR trusted
+  // publishing). No explicit token URL: the script runs inside that checkout.
   sh("git push origin HEAD:main", { cwd });
-  sh(`git tag -a v${version} -m 'chore(release): v${version}'`, { cwd });
-  sh(`git push ${pushUrl} v${version}`, { cwd });
+  sh(
+    `git -c user.name='seal-ts-release' -c user.email='daniel@woss.io' tag -a v${version} -m 'chore(release): v${version}'`,
+    { cwd },
+  );
+  sh(`git push origin v${version}`, { cwd });
   console.log(
     `auto-release: pushed main + v${version} — release.yml is publishing`,
   );

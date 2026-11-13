@@ -142,4 +142,21 @@ describe("main() integration (temp repo, dry-run)", () => {
     const dir = repo([]);
     expect(await main({ cwd: dir, dryRun: true })).toBeNull();
   });
+
+  it("commits and tags with inline identity when the runner has none (CI regression)", async () => {
+    // Identity-less work repo + bare origin = tonight's CI failure shape.
+    const dir = repo([["Merge pull request #9 from woss/feat/x", "feat: new thing"]], false);
+    const bare = mkdtempSync(join(tmpdir(), "auto-release-origin-"));
+    dirs.push(bare);
+    execSync(`git init -q --bare ${bare}`);
+    execSync(`git remote add origin ${bare}`, { cwd: dir, encoding: "utf8" });
+    // No GH_TOKEN involved: pushes authenticate via whatever credential the
+    // checkout persisted (locally: none needed for a bare path remote).
+    const version = await main({ cwd: dir, dryRun: false });
+    expect(version).toBe("0.4.0");
+    const log = execSync(`git log -1 --format='%an|%ae|%s'`, { cwd: dir, encoding: "utf8" });
+    expect(log).toContain("seal-ts-release|daniel@woss.io|chore(release): v0.4.0");
+    // Tag landed on the "origin" bare repo.
+    expect(execSync(`git tag --list v0.4.0`, { cwd: bare, encoding: "utf8" }).trim()).toBe("v0.4.0");
+  });
 });
