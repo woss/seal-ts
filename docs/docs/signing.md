@@ -9,13 +9,13 @@ sidebar_position: 3
 format supports it.
 
 ```ts
-import { generateSealKeyPair, sealSign } from '@woss/seal-ts';
+import { generateSealKeyPair, importPrivateKey, sealSign } from '@woss/seal-ts';
 
 const kp = await generateSealKeyPair('ecdsa'); // or 'rsa'
 
 const signed = await sealSign(manifestBytes, {
   domain: 'example.com',
-  key: kp.key,
+  key: await importPrivateKey(kp.pkcs8B64, kp.alg),
   alg: 'ecdsa',
   id: 'account-42', // optional; emitted as id= and uid= (spec §uid)
   sigFormat: 'hex', // or 'base64' (default)

@@ -1,6 +1,6 @@
 /**
  * Key serialization helpers: base64 (RFC 4648) and WebCrypto import/export
- * for SEAL signing keys — inverses of the vendored validator's key handling.
+ * for SEAL signing keys.
  */
 
 /** Encode bytes as standard base64 (RFC 4648) — ES2026 Uint8Array method, universal in browsers/Deno/Node 24+. */

@@ -2,7 +2,7 @@ import { defineConfig } from '@rslib/core';
 
 // Standalone port of the kelp-market rigs library config: ESM-only,
 // structure-preserving emit (bundle: false) so the ./sign/* export map
-// keeps working, per-file d.ts, tests excluded, vendored validator copied verbatim.
+// keeps working, per-file d.ts, tests excluded.
 export default defineConfig({
   lib: [
     {
@@ -21,7 +21,6 @@ export default defineConfig({
         sourceMap: true,
         cleanDistPath: true,
         polyfill: 'usage',
-        copy: [{ from: 'src/vendor', to: 'vendor' }],
       },
     },
   ],

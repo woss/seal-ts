@@ -15,7 +15,7 @@ sidebar_position: 5
 import { generateSealKeyPair, exportPkcs8B64, importPrivateKey } from '@woss/seal-ts';
 
 const kp = await generateSealKeyPair('ecdsa');
-await persist(exportPkcs8B64(kp.key)); // store the private key
+await persist(kp.pkcs8B64); // already base64 PKCS#8 — store as-is
 
 // Later:
 const key = await importPrivateKey(storedPkcs8B64, 'ecdsa');
@@ -28,7 +28,7 @@ carrying:
 
 | Field | Meaning                                        |
 | ----- | ---------------------------------------------- |
-| `seal=` | record marker                                |
+| `seal=` | record marker (`1`)                          |
 | `ka=`  | key algorithm (`ecdsa` / `rsa`)               |
 | `p=`   | base64 SPKI public key                        |
 | `uid=` | optional per-account pinning                  |
@@ -36,10 +36,14 @@ carrying:
 | `r=`   | revocation: `r=<YYYYMMDDhhmmss>` or `r=revoke`|
 | `p=revoke` | key revocation                            |
 
+Fields are `name=value` pairs separated by **spaces** (the value ends at the next
+space or the end of the TXT string); `p=` is bare base64 — the output of
+`exportSpkiB64`, no brackets or delimiters inside.
+
 Example record for `example.com`:
 
 ```
-example.com. IN TXT "seal=v1; ka=ecdsa; p=<base64 SPKI>; kv=1"
+example.com. IN TXT "seal=1 ka=ecdsa p=MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEw04gTTBr2FPCkFVRQhRQAe2NURZq6c8z1kv6d0iGm0Q kv=1"
 ```
 
 Ops runbook for our own records: kelp-market repo root
