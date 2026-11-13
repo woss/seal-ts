@@ -204,7 +204,13 @@ export async function main({ cwd = process.cwd(), dryRun = false } = {}) {
 
   if (sh("git status --porcelain", { cwd })) {
     sh("git add package.json jsr.json CHANGELOG.md", { cwd });
-    sh(`git commit -m 'chore(release): v${version}'`, { cwd });
+    // -c identity: CI runners have none configured (actions/checkout sets
+    // neither user.name nor user.email); author metadata is informational —
+    // JSR trusted publishing keys off the tag-pushing credential, not this.
+    sh(
+      `git -c user.name='seal-ts-release' -c user.email='daniel@woss.io' commit -m 'chore(release): v${version}'`,
+      { cwd },
+    );
   }
 
   // Main first (branch-protection failures surface before the tag exists), tag second.
