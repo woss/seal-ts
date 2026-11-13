@@ -74,14 +74,16 @@ describe("main() integration (temp repo, dry-run)", () => {
     }
   });
 
-  function repo(commits: Array<[string, string?]>): string {
+  function repo(commits: Array<[string, string?]>, identity = true): string {
     const dir = mkdtempSync(join(tmpdir(), "auto-release-test-"));
     dirs.push(dir);
     const g = (cmd: string) =>
       execSync(`git ${cmd}`, { cwd: dir, encoding: "utf8" });
     g("init -q");
-    g("config user.name t");
-    g("config user.email t@t");
+    if (identity) {
+      g("config user.name t");
+      g("config user.email t@t");
+    }
     writeFileSync(
       `${dir}/package.json`,
       JSON.stringify({ name: "@woss/seal-ts", version: "0.3.0" }, null, 2) +
