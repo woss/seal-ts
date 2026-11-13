@@ -100,14 +100,16 @@ describe("main() integration (temp repo, dry-run)", () => {
     );
     writeFileSync(`${dir}/CHANGELOG.md`, "# Changelog\n");
     g("add -A");
-    g(`commit -qm 'chore: bootstrap'`);
+    g(`${ident} commit -qm 'chore: bootstrap'`);
     g(`tag -a v0.3.0 -m 'v0.3.0'`);
     for (const [subject, body] of commits) {
       const esc = subject.replace(/'/g, "");
       if (body) {
-        g(`commit -q --allow-empty -m '${esc}' -m '${body.replace(/'/g, "")}'`);
+        g(
+          `${ident} commit -q --allow-empty -m '${esc}' -m '${body.replace(/'/g, "")}'`,
+        );
       } else {
-        g(`commit -q --allow-empty -m '${esc}'`);
+        g(`${ident} commit -q --allow-empty -m '${esc}'`);
       }
     }
     return dir;
