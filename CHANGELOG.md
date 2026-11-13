@@ -1,3 +1,11 @@
+## [1.0.0](https://github.com/woss/seal-ts/compare/v0.3.0...v1.0.0) (2026-11-13)
+
+### Bug Fixes
+
+* fix: auto-release heals a missing tag after a partial push ([6d35564](https://github.com/woss/seal-ts/commit/6d35564e7232250fd1d027a8b6824dab7feed3c2))
+* fix: git identity for CI runners ([
+f72369](https://github.com/woss/seal-ts/commit/
+f72369bbcf3024c204a57f1775e5682bb49d9516))
 # Changelog
 
 ## [0.3.0](https://github.com/woss/seal-ts/compare/v0.2.0...v0.3.0) (2026-11-13)

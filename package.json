@@ -1,6 +1,6 @@
 {
   "name": "@woss/seal-ts",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "author": "daniel@woss.io",
   "license": "MIT",
   "type": "module",
