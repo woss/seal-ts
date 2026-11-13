@@ -101,7 +101,7 @@ describe("main() integration (temp repo, dry-run)", () => {
     writeFileSync(`${dir}/CHANGELOG.md`, "# Changelog\n");
     g("add -A");
     g(`${ident} commit -qm 'chore: bootstrap'`);
-    g(`tag -a v0.3.0 -m 'v0.3.0'`);
+    g(`${ident} tag -a v0.3.0 -m 'v0.3.0'`);
     for (const [subject, body] of commits) {
       const esc = subject.replace(/'/g, "");
       if (body) {
