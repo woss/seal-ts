@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -151,8 +151,8 @@ describe("main() integration (temp repo, dry-run)", () => {
     expect(await main({ cwd: dir, dryRun: true })).toBeNull();
   });
 
-  it("PR mode: bump commit + release branch carry inline identity (CI regression)", async () => {
-    // Identity-less work repo + bare origin = tonight's CI failure shape.
+  it("pushes the bump commit to main and cuts the tag with inline identity (CI regression)", async () => {
+    // Identity-less work repo + bare origin = the CI failure shape.
     const dir = repo(
       [["Merge pull request #9 from woss/feat/x", "feat: new thing"]],
       false,
@@ -172,23 +172,24 @@ describe("main() integration (temp repo, dry-run)", () => {
     expect(log).toContain(
       "seal-ts-release|daniel@woss.io|chore(release): v0.4.0",
     );
-    // The bump goes to a release BRANCH — main is branch-protected (PR-only),
-    // so direct pushes to main must never be attempted.
-    const heads = execSync(`git ls-remote --heads origin`, {
+    // Bump commit and tag both landed on origin.
+    const heads = execSync(`git ls-remote origin`, {
       cwd: dir,
       encoding: "utf8",
     });
-    expect(heads).toContain("chore/release-v0.4.0");
-    expect(heads).not.toContain("refs/heads/main");
-    // PR payload for the workflow's gh step.
-    const pr = JSON.parse(readFileSync(`${dir}/.release-pr.json`, "utf8"));
-    expect(pr.branch).toBe("chore/release-v0.4.0");
-    expect(pr.title).toBe("chore(release): v0.4.0");
-    expect(pr.body).toContain("## [0.4.0]");
+    expect(heads).toContain("refs/heads/main");
+    expect(heads).toContain("refs/tags/v0.4.0");
+    // Origin's main carries the release commit.
+    expect(
+      execSync(`git --git-dir=${bare} log -1 --format='%s' main`, {
+        encoding: "utf8",
+      }),
+    ).toContain("chore(release): v0.4.0");
   });
 
-  it("tag mode: merged release PR (version ahead of tag) cuts the tag with inline identity", async () => {
-    // File version 0.4.0 vs prevTag v0.3.0 = release PR merged, tag pending.
+  it("recovery: files ahead of the last tag (partial push) cuts the missing tag", async () => {
+    // File version 0.4.0 vs prevTag v0.3.0 = main was bumped by a previous
+    // run whose tag push failed.
     const dir = repo([], false, "0.4.0");
     const bare = mkdtempSync(join(tmpdir(), "auto-release-origin-"));
     dirs.push(bare);
@@ -205,7 +206,7 @@ describe("main() integration (temp repo, dry-run)", () => {
     expect(tag).toContain(
       "seal-ts-release|<daniel@woss.io>|chore(release): v0.4.0",
     );
-    // Tag mode adds no commit — main only receives the merged release PR.
+    // Recovery adds no commit — it only cuts and pushes the missing tag.
     const head = execSync(`git log -1 --format='%s'`, {
       cwd: dir,
       encoding: "utf8",
@@ -213,7 +214,7 @@ describe("main() integration (temp repo, dry-run)", () => {
     expect(head).not.toContain("chore(release)");
   });
 
-  it("tag mode dry-run: computes the version and mutates nothing", async () => {
+  it("recovery dry-run: computes the version and mutates nothing", async () => {
     const dir = repo([], true, "0.4.0");
     expect(await main({ cwd: dir, dryRun: true })).toBe("0.4.0");
     expect(
