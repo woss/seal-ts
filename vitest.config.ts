@@ -11,6 +11,7 @@ export default defineConfig({
       provider: 'v8',
       reportsDirectory: './temp/coverage',
       include: ['src'],
+      exclude: ['**/*.json', '**/*.d.ts'],
       reporter: ['text', 'json'],
       thresholds: {
         statements: 100,

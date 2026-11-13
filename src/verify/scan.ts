@@ -467,8 +467,9 @@ export function scanMatroska(bytes: Uint8Array): SealScanRecord[] {
     const iLen = lenR.val;
     if (offset + iLen > bytes.length) {break;}
 
+    // SEAL tag — reachable with a non-canonical 5-byte EBML ID prefix (0x08):
+    // readEBML computes val 0x08 & ~(0xff<<3) = 0, then accumulates 'SEAL'.
     if (tagR.val === 0x5345414c) {
-      // SEAL tag
       out.push(...scanBlock(bytes, offset, offset + iLen));
     }
     offset += iLen;
@@ -727,8 +728,8 @@ export function scanByFormat(bytes: Uint8Array): SealScanRecord[] {
       break;
   }
 
-  // Attach the coordinate-space bytes if not already set (ZIP sets it per entry)
-  return recs.map((r) => (r.bytes ? r : { ...r, bytes }));
+  // All scanners set `bytes` (whole file, or the ZIP sub-file coordinate space).
+  return recs;
 }
 
 // ── File-format detection helper (informational only — the validator

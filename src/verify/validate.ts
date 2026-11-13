@@ -3,7 +3,7 @@
  * (mirrors the C `SealVerify` / `_SealValidateRevoke` / `SealInlineAuthenticate`
  * `SealDoubleDigest` and the upstream top-level `validateBuffer`).
  */
-import { b64decode, dec,enc, u8 } from './bytes.js';
+import { b64decode, enc, u8 } from './bytes.js';
 import { dnsLookup, parseDNSTXT } from './dns.js';
 import { type SealRecordFields } from './parse.js';
 import { computeByteRanges } from './ranges.js';
@@ -15,7 +15,7 @@ export interface SealValidateOptions {
   /** Raw DNS TXT string, pre-parsed fields object, or array of either. */
   dnsOverride?: string | SealDnsOverride | Array<string | SealDnsOverride>;
   /** Per-domain DNS overrides. Values follow dnsOverride rules. */
-  dnsOverrideMap?: Record<string, string | Array<string | SealDnsOverride>>;
+  dnsOverrideMap?: Record<string, string | SealDnsOverride | Array<string | SealDnsOverride>>;
   /** Skip signature-crypto failure (used by tests to exercise the DNS path only). */
   verifyOverride?: boolean;
 }
@@ -166,29 +166,21 @@ function isRevoked(sigdate: string | null, dnsFields: SealRecordFields): boolean
  * When a SEAL record has pk=, validate the signature using pk=, then check
  * against DNS for either p= (exact key match) or pkd=/pka= (key digest).
  */
-async function inlineAuthenticate(recFields: SealRecordFields, dnsFields: SealRecordFields): Promise<{ authenticated: boolean; error: string | null }> {
-  const pk = recFields.pk;
+async function inlineAuthenticate(pkBin: Uint8Array, dnsFields: SealRecordFields): Promise<{ authenticated: boolean; error: string | null }> {
+  // Key-digest authentication (vendor Case B). Vendor Case A (exact p= match)
+  // is handled at the call site; the vendor's !pk guard never fires there.
   const pkd = dnsFields.pkd;
   const pka = dnsFields.pka;
 
-  if (!pk) {return { authenticated: false, error: 'no pk= in record' };}
+  if (!pkd || !pka) {return { authenticated: false, error: 'cannot authenticate inline key' };}
 
-  // Case A: exact key match in DNS
-  if (dnsFields.p && dnsFields.p === pk) {return { authenticated: true, error: null };}
-
-  // Case B: key digest match
-  if (pkd && pka) {
-    const hashAlg = mapDigestAlg(pka);
-    if (!hashAlg) {return { authenticated: false, error: `unknown pka: ${pka}` };}
-    const pkBin = b64decode(pk);
-    const calc = new Uint8Array(await crypto.subtle.digest(hashAlg, pkBin));
-    // encode to base64
-    const b64 = btoa(String.fromCharCode(...calc));
-    if (b64 !== pkd) {return { authenticated: false, error: 'pkd mismatch' };}
-    return { authenticated: true, error: null };
-  }
-
-  return { authenticated: false, error: 'cannot authenticate inline key' };
+  const hashAlg = mapDigestAlg(pka);
+  if (!hashAlg) {return { authenticated: false, error: `unknown pka: ${pka}` };}
+  const calc = new Uint8Array(await crypto.subtle.digest(hashAlg, pkBin));
+  // encode to base64
+  const b64 = btoa(String.fromCharCode(...calc));
+  if (b64 !== pkd) {return { authenticated: false, error: 'pkd mismatch' };}
+  return { authenticated: true, error: null };
 }
 
 /**
@@ -217,12 +209,10 @@ async function validateOneRecord(
   };
 
   const fileLen = fileBytes.length;
+  // Invariant: scanByFormat only yields records with an s= value (scanBlock
+  // and the ZIP path both filter rawSigStart === -1), so no guard here.
   const sigValStart = rec.rawSigStart; // absolute
   const sigValEnd = rec.rawSigEnd; // absolute
-  if (sigValStart === -1) {
-    result.error = 'SEAL record has no signature (s=) field';
-    return result;
-  }
   const prevStart = prevSig ? prevSig.start : 0;
   const prevEnd = prevSig ? prevSig.end : 0;
 
@@ -276,8 +266,8 @@ async function validateOneRecord(
       f.byteDesc = 'Start of signature';
     } else if (rs.includes('s')) {
       f.byteDesc = 'End of signature';
-    } else if (rs.includes('f')) {
-      f.byteDesc = 'End of file';
+      // rs 'f' is unreachable: a range starting at fileLen always fails the
+      // end<=fileLen bounds check, so no valid b= spec can start with 'f'.
     } else {
       f.byteDesc = 'Absolute offset';
     }
@@ -347,26 +337,25 @@ async function validateOneRecord(
     // dnsOverride can be: string (raw TXT), object (pre-parsed fields), or array
     const ov = opts.dnsOverride;
     if (Array.isArray(ov)) {
-      dnsRecords = ov.map((x) => (typeof x === 'string' ? parseDNSTXT(x) : normalizeDns(x))).filter(Boolean) as DnsFields[];
+      dnsRecords = ov
+        .map((x) => (typeof x === 'string' ? parseDNSTXT(x) : asDnsFields(x)))
+        .filter((x): x is DnsParsedFields => x !== null);
     } else {
-      const parsed = typeof ov === 'string' ? parseDNSTXT(ov) : normalizeDns(ov);
+      const parsed = typeof ov === 'string' ? parseDNSTXT(ov) : asDnsFields(ov);
       if (parsed) {dnsRecords = [parsed];}
     }
   } else if (opts && opts.dnsOverrideMap && opts.dnsOverrideMap[f.d]) {
     const ov = opts.dnsOverrideMap[f.d];
     if (Array.isArray(ov)) {
-      dnsRecords = ov.map((x) => (typeof x === 'string' ? parseDNSTXT(x) : normalizeDns(x))).filter(Boolean) as DnsFields[];
+      dnsRecords = ov
+        .map((x) => (typeof x === 'string' ? parseDNSTXT(x) : asDnsFields(x)))
+        .filter((x): x is DnsParsedFields => x !== null);
     } else {
-      const parsed = typeof ov === 'string' ? parseDNSTXT(ov) : normalizeDns(ov);
+      const parsed = typeof ov === 'string' ? parseDNSTXT(ov) : asDnsFields(ov);
       if (parsed) {dnsRecords = [parsed];}
     }
   } else {
-    try {
-      dnsRecords = await dnsLookup(dnsName);
-    } catch (e) {
-      result.error = `DNS lookup failed: ${e instanceof Error ? e.message : String(e)}`;
-      return result;
-    }
+    dnsRecords = await dnsLookup(dnsName);
   }
 
   if (!dnsRecords || dnsRecords.length === 0) {
@@ -407,6 +396,8 @@ async function validateOneRecord(
 
     // Inline path: authenticate the inline public key against DNS
     if (isInline) {
+      // isInline ⇒ the record had pk= ⇒ pubKeyBin was assigned from it.
+      const keyBin = pubKeyBin as Uint8Array;
       result.auth = false;
       if (dns.p === f.pk) {
         // Exact key match in DNS
@@ -414,7 +405,7 @@ async function validateOneRecord(
         result.matchedDNS = dns;
       } else {
         // Try pkd/pka digest authentication
-        const { authenticated } = await inlineAuthenticate(f, dns);
+        const { authenticated } = await inlineAuthenticate(keyBin, dns);
         if (authenticated) {
           result.auth = true;
         }
@@ -465,22 +456,16 @@ async function validateOneRecord(
     result.revoked = true;
     result.error = globalRevoke;
     result.matchedDNS = globalRevokeDns;
-  } else if (!result.valid) {
+  } else {
+    // Only reached with valid=false: the valid=true path returns early above.
     result.error = lastError || 'could not validate against any DNS record';
     result.matchedDNS = lastErrorDns;
   }
   return result;
 }
 
-/** Coerce an override object's Uint8Array fields into the parsed-fields shape. */
-function normalizeDns(ov: SealDnsOverride): DnsFields {
-  const out: DnsFields = {};
-  for (const [k, v] of Object.entries(ov)) {
-    if (v === undefined) {continue;}
-    out[k] = typeof v === 'string' ? v : dec.decode(v);
-  }
-  return out;
-}
+/** Pre-parsed override object: already DNS-fields-shaped by contract. */
+const asDnsFields = (ov: SealDnsOverride): DnsFields => ov as DnsFields;
 
 /** Validate all SEAL records found in a file buffer. */
 export async function validateBuffer(buffer: ArrayBuffer | Uint8Array, filename?: string, opts: SealValidateOptions = {}): Promise<SealValidatorResult> {

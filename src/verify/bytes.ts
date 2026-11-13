@@ -86,7 +86,7 @@ export function xmlDecode(s: string): string {
   return s
     .replace(/&#x([0-9a-fA-F]+);/g, (_, h: string) => String.fromCodePoint(parseInt(h, 16)))
     .replace(/&#(\d+);/g, (_, d: string) => String.fromCodePoint(parseInt(d, 10)))
-    .replace(/&lt;|&gt;|&quot;|&apos;|&amp;/g, (m) => XML_ENTITIES[m] || m);
+    .replace(/&lt;|&gt;|&quot;|&apos;|&amp;/g, (m) => XML_ENTITIES[m]);
 }
 
 /** Reverse backslash escaping (mirrors SealStrDecode). */
