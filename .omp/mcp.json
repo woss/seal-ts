@@ -1,0 +1,52 @@
+{
+  "$schema": "https://raw.githubusercontent.com/can1357/oh-my-pi/main/packages/coding-agent/src/config/mcp-schema.json",
+  "mcpServers": {
+    "datadog": {
+      "type": "http",
+      "url": "https://mcp.datadoghq.eu/v1/mcp"
+    },
+    "kelp-market-dev": {
+      "type": "http",
+      "url": "http://127.0.0.1:3100/mcp",
+      "headers": {
+        "x-api-key": "!cat $HOME/.omp/secrets/kelp-market-dev-api-key"
+      }
+    },
+    "kelp-market-prod": {
+      "type": "http",
+      "url": "http://10.43.74.179:3100/mcp",
+      "headers": {
+        "x-api-key": "!cat $HOME/.omp/secrets/kelp-mcp-api-key"
+      }
+    },
+    "kelp-admin-dev": {
+      "type": "http",
+      "url": "http://127.0.0.1:3101/mcp",
+      "headers": {
+        "x-api-key": "!cat $HOME/.omp/secrets/kelp-admin-dev-api-key"
+      }
+    },
+    "kelp-admin-prod": {
+      "type": "http",
+      "url": "http://10.43.121.55:3101/mcp",
+      "headers": {
+        "x-api-key": "!cat $HOME/.omp/secrets/kelp-mcp-api-key"
+      }
+    },
+    "stripe-sandbox": {
+      "type": "http",
+      "url": "https://mcp.stripe.com",
+      "headers": {
+        "Authorization": "!printf 'Bearer %s' \"$(cat $HOME/.omp/secrets/stripe-agent-key-sandbox)\""
+      }
+    },
+    "stripe-live": {
+      "type": "http",
+      "url": "https://mcp.stripe.com",
+      "enabled": false,
+      "headers": {
+        "Authorization": "!printf 'Bearer %s' \"$(cat $HOME/.omp/secrets/stripe-agent-key-live)\""
+      }
+    }
+  }
+}
