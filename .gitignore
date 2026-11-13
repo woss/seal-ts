@@ -6,3 +6,4 @@ docs/build/
 docs/typedoc-html/
 docs/static/typedoc/
 .docusaurus/
+.release-pr.json
