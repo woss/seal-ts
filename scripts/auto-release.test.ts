@@ -74,7 +74,11 @@ describe("main() integration (temp repo, dry-run)", () => {
     }
   });
 
-  function repo(commits: Array<[string, string?]>, identity = true): string {
+  function repo(
+    commits: Array<[string, string?]>,
+    identity = true,
+    version = "0.3.0",
+  ): string {
     const dir = mkdtempSync(join(tmpdir(), "auto-release-test-"));
     dirs.push(dir);
     const g = (cmd: string) =>
@@ -90,13 +94,11 @@ describe("main() integration (temp repo, dry-run)", () => {
     }
     writeFileSync(
       `${dir}/package.json`,
-      JSON.stringify({ name: "@woss/seal-ts", version: "0.3.0" }, null, 2) +
-        "\n",
+      JSON.stringify({ name: "@woss/seal-ts", version }, null, 2) + "\n",
     );
     writeFileSync(
       `${dir}/jsr.json`,
-      JSON.stringify({ name: "@woss/seal-ts", version: "0.3.0" }, null, 2) +
-        "\n",
+      JSON.stringify({ name: "@woss/seal-ts", version }, null, 2) + "\n",
     );
     writeFileSync(`${dir}/CHANGELOG.md`, "# Changelog\n");
     g("add -A");
@@ -149,9 +151,12 @@ describe("main() integration (temp repo, dry-run)", () => {
     expect(await main({ cwd: dir, dryRun: true })).toBeNull();
   });
 
-  it("commits and tags with inline identity when the runner has none (CI regression)", async () => {
-    // Identity-less work repo + bare origin = tonight's CI failure shape.
-    const dir = repo([["Merge pull request #9 from woss/feat/x", "feat: new thing"]], false);
+  it("pushes the bump commit to main and cuts the tag with inline identity (CI regression)", async () => {
+    // Identity-less work repo + bare origin = the CI failure shape.
+    const dir = repo(
+      [["Merge pull request #9 from woss/feat/x", "feat: new thing"]],
+      false,
+    );
     const bare = mkdtempSync(join(tmpdir(), "auto-release-origin-"));
     dirs.push(bare);
     execSync(`git init -q --bare ${bare}`);
@@ -160,9 +165,60 @@ describe("main() integration (temp repo, dry-run)", () => {
     // checkout persisted (locally: none needed for a bare path remote).
     const version = await main({ cwd: dir, dryRun: false });
     expect(version).toBe("0.4.0");
-    const log = execSync(`git log -1 --format='%an|%ae|%s'`, { cwd: dir, encoding: "utf8" });
-    expect(log).toContain("seal-ts-release|daniel@woss.io|chore(release): v0.4.0");
-    // Tag landed on the "origin" bare repo.
-    expect(execSync(`git tag --list v0.4.0`, { cwd: bare, encoding: "utf8" }).trim()).toBe("v0.4.0");
+    const log = execSync(`git log -1 --format='%an|%ae|%s'`, {
+      cwd: dir,
+      encoding: "utf8",
+    });
+    expect(log).toContain(
+      "seal-ts-release|daniel@woss.io|chore(release): v0.4.0",
+    );
+    // Bump commit and tag both landed on origin.
+    const heads = execSync(`git ls-remote origin`, {
+      cwd: dir,
+      encoding: "utf8",
+    });
+    expect(heads).toContain("refs/heads/main");
+    expect(heads).toContain("refs/tags/v0.4.0");
+    // Origin's main carries the release commit.
+    expect(
+      execSync(`git --git-dir=${bare} log -1 --format='%s' main`, {
+        encoding: "utf8",
+      }),
+    ).toContain("chore(release): v0.4.0");
+  });
+
+  it("recovery: files ahead of the last tag (partial push) cuts the missing tag", async () => {
+    // File version 0.4.0 vs prevTag v0.3.0 = main was bumped by a previous
+    // run whose tag push failed.
+    const dir = repo([], false, "0.4.0");
+    const bare = mkdtempSync(join(tmpdir(), "auto-release-origin-"));
+    dirs.push(bare);
+    execSync(`git init -q --bare ${bare}`);
+    execSync(`git remote add origin ${bare}`, { cwd: dir, encoding: "utf8" });
+    const version = await main({ cwd: dir, dryRun: false });
+    expect(version).toBe("0.4.0");
+    // Annotated tags carry a tagger identity — it must be inline (CI runners
+    // have no global gitconfig).
+    const tag = execSync(
+      `git --git-dir=${bare} for-each-ref refs/tags/v0.4.0 --format='%(taggername)|%(taggeremail)|%(subject)'`,
+      { encoding: "utf8" },
+    );
+    expect(tag).toContain(
+      "seal-ts-release|<daniel@woss.io>|chore(release): v0.4.0",
+    );
+    // Recovery adds no commit — it only cuts and pushes the missing tag.
+    const head = execSync(`git log -1 --format='%s'`, {
+      cwd: dir,
+      encoding: "utf8",
+    });
+    expect(head).not.toContain("chore(release)");
+  });
+
+  it("recovery dry-run: computes the version and mutates nothing", async () => {
+    const dir = repo([], true, "0.4.0");
+    expect(await main({ cwd: dir, dryRun: true })).toBe("0.4.0");
+    expect(
+      execSync(`git status --porcelain`, { cwd: dir, encoding: "utf8" }),
+    ).toBe("");
   });
 });

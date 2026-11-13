@@ -2,13 +2,13 @@ name: Auto Release
 
 # Zero-touch releases: every merge to main bumps the version from commit
 # subjects (feat=minor, fix/perf=patch, !/BREAKING CHANGE=major), commits the
-# bump + CHANGELOG straight to main, pushes the semver tag, and tags trigger
-# release.yml (gates + npm/JSR publish). No release PR, no release-please.
+# bump + CHANGELOG straight to main, pushes the semver tag, and the tag
+# triggers release.yml (gates + npm/JSR publish).
 #
 # The tag push must be a HUMAN actor: JSR trusted publishing rejects bot
-# tokens. The checkout below persists RELEASE_PAT as the git credential, so
-# the pushes in this workflow authenticate as the PAT owner. A regular
-# GITHUB_TOKEN (bot actor) would pass npm but fail the JSR publish.
+# tokens (actorNotScopeMember). The checkout below persists RELEASE_PAT as
+# the push credential; the script carries commit/tag identity inline (CI
+# runners have no gitconfig).
 
 on:
   push:

@@ -1,19 +1,24 @@
 #!/usr/bin/env node
 /**
  * Fully automatic releases: on every push to main, compute the next semver
- * from conventional commits since the last v* tag (first-parent walk, so one
+ * from conventional commits since the last v* tag (first-parent walk, one
  * entry per merged PR), bump package.json + jsr.json, prepend a CHANGELOG
- * section, commit straight to main and tag. release.yml (on: push: tags)
- * re-runs all gates and publishes npm + JSR.
+ * section, commit to main, cut the annotated tag, push both. release.yml
+ * (on: push: tags) re-runs all gates and publishes npm + JSR.
  *
- * Runs with RELEASE_PAT so commits/tags are pushed as a human actor —
- * JSR trusted publishing rejects bot actors (actorNotScopeMember).
+ * Pushes authenticate via the credential actions/checkout persisted from its
+ * `token:` input (RELEASE_PAT) — and that credential must be a HUMAN actor:
+ * JSR trusted publishing rejects bot tokens (actorNotScopeMember). Commits
+ * and tags carry inline identity because CI runners have no gitconfig.
  *
  * Semver rules (conventional): feat → minor, fix/perf → patch, `!` or
  * `BREAKING CHANGE:` in body → major; other types (chore/docs/test/ci/…)
  * release nothing.
  *
- * --dry-run computes and prints the release without touching files or git.
+ * --dry-run computes and prints the release without touching files, git or
+ * remotes. Rerun-safe: a partial push (main bumped, tag push failed) heals
+ * on the next trigger — files ahead of the last tag just cuts the missing
+ * tag.
  */
 import { execSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -125,7 +130,43 @@ export async function main({ cwd = process.cwd(), dryRun = false } = {}) {
     return null;
   }
   const prevTag = lastTags.split("\n")[0];
+  const pkg = JSON.parse(readFileSync(`${cwd}/package.json`, "utf8"));
 
+  // Recovery: a previous run pushed the bump to main but died before the tag
+  // (files' version ahead of the last v* tag). Cut the missing tag at HEAD
+  // and push it — the human-actor credential from the checkout is what JSR
+  // trusted publishing requires.
+  if (`v${pkg.version}` !== prevTag) {
+    let tagged;
+    try {
+      tagged = !!sh(`git ls-remote --tags origin refs/tags/v${pkg.version}`, {
+        cwd,
+      });
+    } catch {
+      tagged = !!sh(`git tag --list v${pkg.version}`, { cwd });
+    }
+    if (tagged) {
+      console.log(`auto-release: v${pkg.version} already tagged — skipping`);
+      return null;
+    }
+    console.log(
+      `auto-release: v${pkg.version} merged but untagged — tagging HEAD`,
+    );
+    if (dryRun) {
+      return pkg.version;
+    }
+    sh(
+      `git -c user.name='seal-ts-release' -c user.email='daniel@woss.io' tag -a v${pkg.version} -m 'chore(release): v${pkg.version}'`,
+      { cwd },
+    );
+    sh(`git push origin v${pkg.version}`, { cwd });
+    console.log(
+      `auto-release: pushed v${pkg.version} — release.yml is publishing`,
+    );
+    return pkg.version;
+  }
+
+  // Release-PR mode below: main is version-consistent with prevTag.
   const commits = collect(prevTag, cwd);
   if (!commits.length) {
     console.log(
@@ -149,7 +190,6 @@ export async function main({ cwd = process.cwd(), dryRun = false } = {}) {
     return null;
   }
 
-  const pkg = JSON.parse(readFileSync(`${cwd}/package.json`, "utf8"));
   const version = nextVersion(pkg.version, bump);
   // Remote check (survives reruns after a partial push); falls back to local
   // tags in test repos with no origin.
@@ -213,11 +253,7 @@ export async function main({ cwd = process.cwd(), dryRun = false } = {}) {
     );
   }
 
-  // Main first (branch-protection failures surface before the tag exists), tag second.
-  // Both pushes authenticate via the credential actions/checkout persists from
-  // its `token:` input (RELEASE_PAT — human actor, required by JSR trusted
-  // publishing). No explicit token URL: the script runs inside that checkout.
-  sh("git push origin HEAD:main", { cwd });
+  sh(`git push origin HEAD:main`, { cwd });
   sh(
     `git -c user.name='seal-ts-release' -c user.email='daniel@woss.io' tag -a v${version} -m 'chore(release): v${version}'`,
     { cwd },
