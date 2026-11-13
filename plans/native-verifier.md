@@ -2,7 +2,7 @@
 type: Plan
 title: Native TypeScript verifier — drop vendored SEAL-JS
 description: Implement full SEAL v1.2.12 verification natively in seal-ts and delete src/vendor/seal-validator.js plus its pin test.
-status: draft
+status: stable
 generated:
   by: omp/01a1d4f0-9f25-70b0-b7eb-d0f0dacfde2d
   at: 2026-11-13T13:15:00Z
