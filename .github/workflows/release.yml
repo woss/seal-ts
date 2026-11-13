@@ -116,7 +116,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - name: Package dist tarball
-        run: tar czf "seal-ts-${TAG_NAME}.tar.gz" dist package.json jsr.json LICENSE README.md
+        run: tar czf "seal-${TAG_NAME}.tar.gz" dist package.json jsr.json LICENSE README.md
       - name: Extract changelog section
         run: |
           VERSION="${TAG_NAME#v}"
@@ -130,5 +130,5 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ env.TAG_NAME }}
-          files: seal-ts-*.tar.gz
+          files: seal-*.tar.gz
           body_path: release-notes.md

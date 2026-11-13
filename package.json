@@ -33,7 +33,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/woss/seal-ts.git"
+    "url": "git+https://github.com/woss/seal.git"
   },
   "engines": {
     "node": ">=26"

@@ -56,11 +56,11 @@ describe("changelogSection", () => {
       perfs: [],
     });
     expect(s).toMatch(
-      /^## \[0\.4\.0\]\(https:\/\/github\.com\/woss\/seal-ts\/compare\/v0\.3\.0\.\.\.v0\.4\.0\) \(2026-11-13\)\n\n### Features\n\n\* new thing \(\[abc1234\]/,
+      /^## \[0\.4\.0\]\(https:\/\/github\.com\/woss\/seal\/compare\/v0\.3\.0\.\.\.v0\.4\.0\) \(2026-11-13\)\n\n### Features\n\n\* new thing \(\[abc1234\]/,
     );
     expect(s).toContain("### Bug Fixes");
     expect(s).toContain(
-      "* fixed thing ([aaa0000](https://github.com/woss/seal-ts/commit/aaa0000bbb))",
+      "* fixed thing ([aaa0000](https://github.com/woss/seal/commit/aaa0000bbb))",
     );
     expect(s).not.toContain("Performance");
   });

@@ -1,4 +1,4 @@
-# seal-ts
+# seal
 
 SEAL (Secure Evidence Attribution Label) v1 for TypeScript/JavaScript — **sign and verify**.
 
@@ -18,7 +18,7 @@ vector suite.
 Pre-publication. The package will ship on npm as `@woss/seal-ts` (repo `woss/seal-ts`)
 after external review; inside the kelp-market workspace it is `@kelp_digital/seal`.
 
-Docs: <https://woss.github.io/seal-ts/> (API reference: <https://woss.github.io/seal-ts/typedoc/>).
+Docs: <https://woss.github.io/seal/> (API reference: <https://woss.github.io/seal/typedoc/>).
 
 ## Install
 

@@ -1,10 +1,10 @@
 ---
 slug: /
-title: seal-ts
+title: seal
 sidebar_position: 1
 ---
 
-# seal-ts
+# seal
 
 SEAL (Secure Evidence Attribution Label) v1 for TypeScript/JavaScript — **sign and verify**.
 

@@ -5,7 +5,7 @@ signer + native TypeScript verifier (a port of the upstream SEAL-JS validator,
 itself mirroring the C reference). Spec:
 [SEAL v1.2.12 SPECIFICATION.md](https://github.com/hackerfactor/SEAL/blob/main/SPECIFICATION.md).
 
-The package is standalone (`@woss/seal-ts`, GitHub `woss/seal-ts`, MIT): no
+The package is standalone (`@woss/seal-ts`, GitHub `woss/seal`, MIT): no
 vendored or generated third-party code ships in it.
 
 ## Signer invariants (break these = bug)

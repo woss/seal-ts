@@ -23,7 +23,7 @@
 import { execSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 
-const REPO_URL = "https://github.com/woss/seal-ts";
+const REPO_URL = "https://github.com/woss/seal";
 
 /** Classify one conventional-commit subject → 'major'|'minor'|'patch'|null. */
 export function classifySubject(subject) {

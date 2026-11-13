@@ -3,7 +3,7 @@ import type { Config } from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
-  title: 'seal-ts',
+  title: 'seal',
   tagline: 'SEAL v1 signing + verification for TypeScript/JavaScript',
   favicon: undefined,
 
@@ -16,10 +16,10 @@ const config: Config = {
   },
 
   url: 'https://woss.github.io',
-  baseUrl: '/seal-ts/',
+  baseUrl: '/seal/',
 
   organizationName: 'woss',
-  projectName: 'seal-ts',
+  projectName: 'seal',
   onBrokenMarkdownLinks: 'warn',
 
   i18n: {
@@ -33,7 +33,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/woss/seal-ts/tree/main/docs/',
+          editUrl: 'https://github.com/woss/seal/tree/main/docs/',
           routeBasePath: '/',
         },
         blog: false,
@@ -46,14 +46,14 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'seal-ts',
+      title: 'seal',
       items: [
         { to: '/signing', label: 'Sign', position: 'left' },
         { to: '/verifying', label: 'Verify', position: 'left' },
         { to: '/keys', label: 'Keys', position: 'left' },
-        { href: '/seal-ts/typedoc/', label: 'API (TypeDoc)', position: 'left' },
+        { href: '/seal/typedoc/', label: 'API (TypeDoc)', position: 'left' },
         {
-          href: 'https://github.com/woss/seal-ts',
+          href: 'https://github.com/woss/seal',
           label: 'GitHub',
           position: 'right',
         },
@@ -73,7 +73,7 @@ const config: Config = {
         {
           title: 'More',
           items: [
-            { label: 'GitHub', href: 'https://github.com/woss/seal-ts' },
+            { label: 'GitHub', href: 'https://github.com/woss/seal' },
             {
               label: 'SEAL Specification',
               href: 'https://github.com/hackerfactor/SEAL/blob/main/SPECIFICATION.md',
@@ -81,7 +81,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} seal-ts. Built with Docusaurus. Made with Human and AI effort — <a href="https://woss.io" target="_blank" rel="noopener noreferrer">woss.io</a>.`,
+      copyright: `Copyright © ${new Date().getFullYear()} seal. Built with Docusaurus. Made with Human and AI effort — <a href="https://woss.io" target="_blank" rel="noopener noreferrer">woss.io</a>.`,
     },
     prism: {
       theme: prismThemes.github,
