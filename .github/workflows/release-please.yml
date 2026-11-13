@@ -26,7 +26,22 @@ jobs:
           # (actorNotScopeMember — verified on v0.1.0 and v0.2.0).
           token: ${{ secrets.RELEASE_PAT }}
 
-# With RELEASE_PAT, merging the release PR is the only manual step: the tag is
-# pushed under the PAT owner's identity, release.yml fires on the tag event and
-# publishes to npm + JSR as a human actor. Fallback only (e.g. PAT expired):
+      # Fully automatic releases: merge the release PR in this same run. Safe
+      # to skip its own CI — release.yml re-runs all gates before publishing.
+      # Merge (not squash) per release-please config squash:false; failure
+      # (e.g. conflicts) leaves the PR open for a manual merge as fallback.
+      - name: Auto-merge release PR
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
+        run: |
+          PR=$(gh pr list --repo "$GITHUB_REPOSITORY" \
+            --head release-please--branches--main--components--seal-ts \
+            --state open --json number --jq '.[0].number // empty')
+          if [ -n "$PR" ]; then
+            gh pr merge --merge "$PR"
+          fi
+
+# Flow: feature PR merged → this run creates+merges the release PR → the merge
+# push triggers the next release-please run, which tags (PAT = human actor) →
+# release.yml publishes npm + JSR. Fallback only (e.g. PAT expired):
 #   gh workflow run release.yml -f tag_name=vX.Y.Z
