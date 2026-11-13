@@ -303,7 +303,16 @@ async function validateOneRecord(
     return result;
   }
 
-  const { rawBytes: primaryRawBytes, digest: primaryDigest } = await hashRanges(fileBytes, ranges, hashAlg);
+  let primaryRawBytes: Uint8Array;
+  let primaryDigest: Uint8Array;
+  try {
+    ({ rawBytes: primaryRawBytes, digest: primaryDigest } = await hashRanges(fileBytes, ranges, hashAlg));
+  } catch {
+    // mapDigestAlg only emits WebCrypto-unsupported names for da=sha224 —
+    // fail closed with the explicit why instead of letting digest() throw.
+    result.error = 'Verification error: WebCrypto has no SHA-224 (da=sha224 records are unverifiable)';
+    return result;
+  }
 
   // 5. ── Double digest (if date or id present) ────────────────
   // verifyInput = raw bytes to hand to crypto.subtle.verify()
@@ -363,7 +372,9 @@ async function validateOneRecord(
     return result;
   }
 
-  // Try each DNS record until one validates
+  // Try each DNS record until one validates — first-match-wins in DNS Answer
+  // order (upstream parity). Order-dependence of revocation vs. validation is
+  // spec-feedback item A1 (kelp-market plans/seal-spec-feedback.md).
   let globalRevoke: string | null = null;
   let globalRevokeDns: DnsFields | null = null;
   let lastError: string | null = null;

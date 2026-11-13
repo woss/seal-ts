@@ -60,6 +60,13 @@ describe('validateBuffer — early returns', () => {
     expect(r.error).toBe('Unknown digest algorithm: md5');
   });
 
+  it('fails closed with an explicit why for da=sha224 (no WebCrypto digest)', async () => {
+    const body = te.encode('<seal seal="1" d="example.com" ka="rsa" da="sha224" s="QUJD" b="F~S,s~f" />');
+    const [r] = await validateBuffer(body, 'x.txt', { dnsOverride: 'seal=1 ka=rsa p=QUJD' });
+    expect(r.valid).toBe(false);
+    expect(r.error).toMatch(/SHA-224/);
+  });
+
 });
 
 describe('validateBuffer — revocation', () => {
