@@ -21,7 +21,7 @@ with the verifier ported from upstream and conformance-tested against its public
 ## Quick start
 
 ```ts
-import { generateSealKeyPair, sealSign, seal } from '@woss/seal-ts';
+import { generateSealKeyPair, importPrivateKey, sealSign, seal } from '@woss/seal-ts';
 
 // One-time: generate a keypair, publish the SPKI in DNS TXT (see Keys)
 const kp = await generateSealKeyPair('ecdsa');
@@ -29,7 +29,7 @@ const kp = await generateSealKeyPair('ecdsa');
 // Sign a manifest (JPEG/PNG embeds natively; anything else is a sidecar record)
 const signed = await sealSign(manifestBytes, {
   domain: 'example.com',
-  key: kp.key,
+  key: await importPrivateKey(kp.pkcs8B64, kp.alg),
   alg: 'ecdsa',
 });
 

@@ -19,6 +19,15 @@ const results = await seal.validateBuffer(bytes, filename, {
 // results[i].valid, .auth, .revoked, .error
 ```
 
+## Trust model: `valid` vs `auth`
+
+- `valid: true` — the signature verified against the key that was used.
+- `auth: true` — that key is the DNS-published key for the domain.
+
+For records carrying an inline `pk=`, the signing key is the record's own, so a
+self-signed record can be `valid: true` with `auth: false` (upstream SEAL-JS
+behavior). Treat a record as bound to its domain only when **`valid && auth`**.
+
 ## Key resolution
 
 Validation resolves the signer's public key from DNS TXT at the record's

@@ -29,14 +29,14 @@ pnpm add @woss/seal-ts   # once published; until then: workspace package
 ## Sign
 
 ```ts
-import { generateSealKeyPair, sealSign } from '@woss/seal-ts';
+import { generateSealKeyPair, importPrivateKey, sealSign } from '@woss/seal-ts';
 
 const kp = await generateSealKeyPair('ecdsa'); // or 'rsa'
 // publish kp.spkiB64 in DNS TXT for your domain (see "Key distribution")
 
 const signed = await sealSign(manifestBytes, {
   domain: 'example.com',
-  key: kp.key,
+  key: await importPrivateKey(kp.pkcs8B64, kp.alg),
   alg: 'ecdsa',
   id: 'account-42', // optional; emitted as id= and uid= (spec §uid)
   sigFormat: 'hex', // or 'base64' (default)
@@ -67,6 +67,13 @@ const results = await seal.validateBuffer(bytes, filename, {
 The verify side is a native TypeScript port of the upstream validator, conformance-tested
 against its public vector suite. It behaves identically to `sealtool`/SEAL-JS, including
 quirks (`da=sha224` records fail closed — WebCrypto has no SHA-224).
+
+### Trust: `valid` vs `auth`
+
+`valid: true` means the signature verified against the key that was used. For records
+carrying an inline `pk=`, that key is the record's own — a self-signed record can be
+`valid: true` with `auth: false`. Treat a record as bound to its domain only when
+`valid && auth` (`auth: true` = the DNS-published key covered the signature).
 
 ## Keys
 

@@ -16,7 +16,12 @@ export interface SealValidateOptions {
   dnsOverride?: string | SealDnsOverride | Array<string | SealDnsOverride>;
   /** Per-domain DNS overrides. Values follow dnsOverride rules. */
   dnsOverrideMap?: Record<string, string | SealDnsOverride | Array<string | SealDnsOverride>>;
-  /** Skip signature-crypto failure (used by tests to exercise the DNS path only). */
+  /**
+   * Upstream test seam (SEAL-JS parity): marks every record `valid: true` and
+   * `auth: true` WITHOUT any signature verification. Never enable outside
+   * tests.
+   * @internal
+   */
   verifyOverride?: boolean;
 }
 
@@ -303,16 +308,14 @@ async function validateOneRecord(
     return result;
   }
 
-  let primaryRawBytes: Uint8Array;
-  let primaryDigest: Uint8Array;
-  try {
-    ({ rawBytes: primaryRawBytes, digest: primaryDigest } = await hashRanges(fileBytes, ranges, hashAlg));
-  } catch {
-    // mapDigestAlg only emits WebCrypto-unsupported names for da=sha224 —
-    // fail closed with the explicit why instead of letting digest() throw.
+  // mapDigestAlg only emits WebCrypto-unsupported names for da=sha224 — fail
+  // closed with the explicit why instead of letting crypto.subtle throw.
+  if (hashAlg === 'SHA-224') {
     result.error = 'Verification error: WebCrypto has no SHA-224 (da=sha224 records are unverifiable)';
     return result;
   }
+
+  const { rawBytes: primaryRawBytes, digest: primaryDigest } = await hashRanges(fileBytes, ranges, hashAlg);
 
   // 5. ── Double digest (if date or id present) ────────────────
   // verifyInput = raw bytes to hand to crypto.subtle.verify()
