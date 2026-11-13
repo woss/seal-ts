@@ -1,26 +1,24 @@
 #!/usr/bin/env node
 /**
- * Fully automatic releases in two modes (main is branch-protected: PR-only +
- * verified signatures, so direct pushes and API commits are both rejected).
+ * Fully automatic releases: on every push to main, compute the next semver
+ * from conventional commits since the last v* tag (first-parent walk, one
+ * entry per merged PR), bump package.json + jsr.json, prepend a CHANGELOG
+ * section, commit to main, cut the annotated tag, push both. release.yml
+ * (on: push: tags) re-runs all gates and publishes npm + JSR.
  *
- * - Release-PR mode: on ordinary pushes, compute the next semver from
- *   conventional commits since the last v* tag (first-parent walk, one entry
- *   per merged PR), bump package.json + jsr.json, prepend a CHANGELOG
- *   section, commit to a disposable `chore/release-vX.Y.Z` branch and hand
- *   the PR payload to the workflow (`.release-pr.json`), which opens/updates
- *   the release PR via gh. Merging it lands a GitHub-signed commit on main.
- * - Tag mode: when the release PR is merged (main's version is ahead of the
- *   last v* tag), cut the annotated tag at HEAD and push it — as a HUMAN
- *   actor via the checkout-persisted RELEASE_PAT; JSR trusted publishing
- *   rejects bot actors (actorNotScopeMember). release.yml (on: push: tags)
- *   re-runs all gates and publishes npm + JSR.
+ * Pushes authenticate via the credential actions/checkout persisted from its
+ * `token:` input (RELEASE_PAT) — and that credential must be a HUMAN actor:
+ * JSR trusted publishing rejects bot tokens (actorNotScopeMember). Commits
+ * and tags carry inline identity because CI runners have no gitconfig.
  *
  * Semver rules (conventional): feat → minor, fix/perf → patch, `!` or
  * `BREAKING CHANGE:` in body → major; other types (chore/docs/test/ci/…)
  * release nothing.
  *
  * --dry-run computes and prints the release without touching files, git or
- * the PR payload.
+ * remotes. Rerun-safe: a partial push (main bumped, tag push failed) heals
+ * on the next trigger — files ahead of the last tag just cuts the missing
+ * tag.
  */
 import { execSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -134,9 +132,10 @@ export async function main({ cwd = process.cwd(), dryRun = false } = {}) {
   const prevTag = lastTags.split("\n")[0];
   const pkg = JSON.parse(readFileSync(`${cwd}/package.json`, "utf8"));
 
-  // Tag mode: the release PR was merged (main's version is ahead of the last
-  // v* tag) but the tag isn't cut yet. Tag HEAD and push — the human-actor
-  // credential from the checkout is what JSR trusted publishing requires.
+  // Recovery: a previous run pushed the bump to main but died before the tag
+  // (files' version ahead of the last v* tag). Cut the missing tag at HEAD
+  // and push it — the human-actor credential from the checkout is what JSR
+  // trusted publishing requires.
   if (`v${pkg.version}` !== prevTag) {
     let tagged;
     try {
@@ -254,24 +253,14 @@ export async function main({ cwd = process.cwd(), dryRun = false } = {}) {
     );
   }
 
-  const branch = `chore/release-v${version}`;
-  // Bot-owned disposable branch: --force replaces any earlier attempt for
-  // this version, which also refreshes an already-open release PR. The push
-  // authenticates via the credential actions/checkout persisted from its
-  // `token:` input (RELEASE_PAT) — branch pushes aren't protected, only main.
-  // PR creation happens in the workflow (gh + GITHUB_TOKEN): a bot may open
-  // PRs; only the tag push needs the human actor.
-  writeFileSync(
-    `${cwd}/.release-pr.json`,
-    JSON.stringify(
-      { branch, title: `chore(release): v${version}`, body: section },
-      null,
-      2,
-    ) + "\n",
+  sh(`git push origin HEAD:main`, { cwd });
+  sh(
+    `git -c user.name='seal-ts-release' -c user.email='daniel@woss.io' tag -a v${version} -m 'chore(release): v${version}'`,
+    { cwd },
   );
-  sh(`git push --force origin HEAD:refs/heads/${branch}`, { cwd });
+  sh(`git push origin v${version}`, { cwd });
   console.log(
-    `auto-release: pushed ${branch} — workflow opens/updates the release PR`,
+    `auto-release: pushed main + v${version} — release.yml is publishing`,
   );
   return version;
 }

@@ -1,18 +1,14 @@
 name: Auto Release
 
-# Zero-touch releases through the branch-protection rules (main: PR-only +
-# verified signatures — direct pushes and API commits are both rejected, so
-# release-please's pattern applies):
+# Zero-touch releases: every merge to main bumps the version from commit
+# subjects (feat=minor, fix/perf=patch, !/BREAKING CHANGE=major), commits the
+# bump + CHANGELOG straight to main, pushes the semver tag, and the tag
+# triggers release.yml (gates + npm/JSR publish).
 #
-# 1. Every merge to main runs scripts/auto-release.mjs. Ordinary pushes get a
-#    bump commit on a disposable chore/release-vX.Y.Z branch; this workflow
-#    then opens/updates the release PR with gh + GITHUB_TOKEN (a bot may open
-#    PRs). Merging the release PR lands a GitHub-signed commit on main,
-#    satisfying the signature rule.
-# 2. When the release PR is merged (main's version ahead of the last v* tag),
-#    the script cuts the annotated tag and pushes it as a HUMAN actor — JSR
-#    trusted publishing rejects bot tokens (actorNotScopeMember). The tag
-#    push triggers release.yml (gates + npm/JSR publish).
+# The tag push must be a HUMAN actor: JSR trusted publishing rejects bot
+# tokens (actorNotScopeMember). The checkout below persists RELEASE_PAT as
+# the push credential; the script carries commit/tag identity inline (CI
+# runners have no gitconfig).
 
 on:
   push:
@@ -20,7 +16,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 concurrency:
   group: auto-release
@@ -40,17 +35,5 @@ jobs:
         with:
           node-version: 26
       - run: pnpm install --frozen-lockfile
-      - name: Compute release (bump commit on release branch, or tag after PR merge)
+      - name: Bump version, commit, tag, push
         run: node scripts/auto-release.mjs
-      - name: Open or update the release PR
-        # .release-pr.json is written only in release-PR mode (tag mode tags
-        # and publishes directly).
-        if: hashFiles('.release-pr.json') != ''
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          branch=$(jq -r .branch .release-pr.json)
-          title=$(jq -r .title .release-pr.json)
-          jq -r .body .release-pr.json > .release-body.md
-          gh pr create --head "$branch" --title "$title" --body-file .release-body.md ||
-            gh pr edit "$branch" --title "$title" --body-file .release-body.md
