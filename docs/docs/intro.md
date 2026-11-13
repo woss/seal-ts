@@ -15,8 +15,8 @@ by a public key published in DNS TXT. The spec is maintained by
 
 The upstream JavaScript implementation ([hackerfactor/SEAL-JS](https://github.com/hackerfactor/SEAL-JS))
 is **validator-only**; until now a full signer existed only in C ([hackerfactor/SEAL-C](https://github.com/hackerfactor/SEAL-C)).
-This package adds the missing signer in TypeScript and pairs it with the vendored upstream
-validator so what we sign is proven to authenticate, byte for byte.
+This package implements the **whole spec natively in TypeScript** — signer and verifier —
+with the verifier ported from upstream and conformance-tested against its public vector suite.
 
 ## Quick start
 
@@ -44,4 +44,3 @@ console.log(results[0].valid); // true
 - [Signing](./signing.md) — embed formats, record structure, algorithms
 - [Verification](./verifying.md) — DNS resolution, validation results, quirks
 - [Keys](./keys.md) — generation, persistence, DNS TXT distribution, revocation
-- [Vendored validator](./vendor.md) — why the verify side is upstream code

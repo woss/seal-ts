@@ -5,9 +5,10 @@ sidebar_position: 4
 
 # Verification
 
-The verify side is the upstream SEAL-JS validator vendored **verbatim**
-(sha256-pinned by test), so verification behaves identically to
-`sealtool`/SEAL-JS.
+Verification is implemented natively in TypeScript (`src/verify/`) — no
+external validator is shipped. Its structure mirrors the SEAL C reference
+(`SealVerify`, `SealDoubleDigest`, `SealParse`) and is exercised against the
+upstream SEAL-JS vector suite, ported 1:1 in `upstream-suite.test.ts`.
 
 ```ts
 import { seal } from '@woss/seal-ts';
@@ -25,10 +26,17 @@ Validation resolves the signer's public key from DNS TXT at the record's
 verification dependency-free and browser-compatible. Pass `dnsOverride` to
 inject records directly (tests, offline verification).
 
-## Known quirks (upstream parity, intentional)
+## Known limitation: `da=sha224`
 
-- `da=sha224` records can never validate — WebCrypto has no SHA-224.
-- TXT parsing, multiple-key domains, and revocation (`p=revoke`,
-  `r=<date>`) all follow the vendored upstream behavior exactly.
+`sha224` records fail closed with an explicit error: WebCrypto has no SHA-224
+digest and no pre-hashed ECDSA/RSA signature mode, so a signature over a
+SHA-224 digest cannot be verified without a pure-TypeScript hash
+implementation. The spec permits `sha224`; everything else (`sha1`, `sha256`,
+`sha384`, `sha512`) validates.
 
-These are covered by the upstream suite port (`upstream-suite.test.ts`).
+## Conformance
+
+The upstream suite (`upstream-suite.test.ts`), the frozen crypto fixtures
+(`crypto-fixtures.test.ts`), and the sign→verify roundtrip are all green.
+TXT parsing quirks, multiple-key domains, and revocation (`p=revoke`,
+`r=<date>`) follow upstream behavior.

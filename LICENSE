@@ -22,6 +22,6 @@ SOFTWARE.
 
 ---
 
-The vendored validator (`src/vendor/seal-validator.js`) is reproduced verbatim from
-[hackerfactor/SEAL-JS](https://github.com/hackerfactor/SEAL-JS) (MIT) and remains under
-its own copyright; its provenance header records the upstream commit and sha256 pin.
+The verification implementation in `src/verify/` is a TypeScript port of
+[hackerfactor/SEAL-JS](https://github.com/hackerfactor/SEAL-JS) (MIT), which
+itself mirrors the SEAL C reference; SEAL-JS remains under its own copyright.

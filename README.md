@@ -9,8 +9,9 @@ by [Hacker Factor](https://www.hackerfactor.com/).
 
 The upstream JavaScript implementation ([hackerfactor/SEAL-JS](https://github.com/hackerfactor/SEAL-JS))
 is **validator-only**; until now a full signer existed only in C ([hackerfactor/SEAL-C](https://github.com/hackerfactor/SEAL-C)).
-This package adds the missing signer in TypeScript and pairs it with the vendored upstream
-validator so what we sign is proven to authenticate, byte for byte.
+This package implements the **whole spec natively in TypeScript** — signer and verifier —
+with the verifier ported from upstream SEAL-JS and conformance-tested against its public
+vector suite.
 
 ## Status
 
@@ -63,9 +64,9 @@ const results = await seal.validateBuffer(bytes, filename, {
 // results[i].valid, .auth, .revoked, .error
 ```
 
-The verify side is the upstream validator vendored **verbatim** (sha256-pinned by test),
-so verification behaves identically to `sealtool`/SEAL-JS, including quirks
-(`da=sha224` records can never validate — no WebCrypto SHA-224).
+The verify side is a native TypeScript port of the upstream validator, conformance-tested
+against its public vector suite. It behaves identically to `sealtool`/SEAL-JS, including
+quirks (`da=sha224` records fail closed — WebCrypto has no SHA-224).
 
 ## Keys
 
@@ -85,13 +86,14 @@ revocation fields (`r=<YYYYMMDDhhmmss>` or `r=revoke`, `p=revoke`).
 pnpm test
 ```
 
-- `upstream-suite.test.ts` — 1:1 port of upstream `seal-tests.html` against the vendored validator.
+- `upstream-suite.test.ts` — 1:1 port of upstream `seal-tests.html` against the native verifier.
 - `roundtrip.test.ts` — what we sign must authenticate, across text/JPEG/PNG, rsa/ecdsa.
-- `vendor-pin.test.ts` — the vendored validator stays byte-identical to the pinned upstream commit.
+- `crypto-fixtures.test.ts` — frozen signer records (RSA + ECDSA, proven against upstream
+  at capture time) validating with the native verifier.
 
 ## License
 
-MIT — see [LICENSE](LICENSE). The vendored validator is
-[hackerfactor/SEAL-JS](https://github.com/hackerfactor/SEAL-JS) (MIT), reproduced verbatim
-with provenance header. SEAL is designed by Hacker Factor; this is an independent implementation
-of the [open specification](https://github.com/hackerfactor/SEAL).
+MIT — see [LICENSE](LICENSE). The verifier is a TypeScript port of
+[hackerfactor/SEAL-JS](https://github.com/hackerfactor/SEAL-JS) (MIT); upstream attribution
+retained in [LICENSE](LICENSE). SEAL is designed by Hacker Factor; this is an independent
+implementation of the [open specification](https://github.com/hackerfactor/SEAL).

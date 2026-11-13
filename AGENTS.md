@@ -1,23 +1,12 @@
-# AGENTS.md — @kelp_digital/seal (future `woss/seal-ts`)
+# AGENTS.md — @woss/seal-ts
 
-SEAL (Secure Evidence Attribution Label) v1 implementation: TypeScript signer +
-vendored JS validator. First full JS signer — upstream JS ([hackerfactor/SEAL-JS](https://github.com/hackerfactor/SEAL-JS))
-is validator-only; the only other signer is C ([hackerfactor/SEAL-C](https://github.com/hackerfactor/SEAL-C)).
-Spec: [SEAL v1.2.12](https://github.com/hackerfactor/SEAL/blob/main/SPECIFICATION.md).
+SEAL (Secure Evidence Attribution Label) v1 implementation: pure TypeScript
+signer + native TypeScript verifier (a port of the upstream SEAL-JS validator,
+itself mirroring the C reference). Spec:
+[SEAL v1.2.12 SPECIFICATION.md](https://github.com/hackerfactor/SEAL/blob/main/SPECIFICATION.md).
 
-This package is prepared for standalone publication as `@woss/seal-ts` (GitHub `woss/seal-ts`,
-MIT). Until that cutover it stays in the kelp-market workspace as `@kelp_digital/seal`.
-
-## Hard rules
-
-- **`src/vendor/seal-validator.js` is DO-NOT-EDIT.** Vendored verbatim from upstream,
-  pinned by sha256 in `src/vendor-pin.test.ts`. Re-vendoring updates the pinned hash in
-  that test AND the provenance header in the file, together, deliberately.
-- **Signer/validator parity is the invariant.** Every signer output must authenticate
-  byte-exactly under the vendored validator. `roundtrip.test.ts` is the gate for any
-  record-building or embed change.
-- **Never touch validator internals to make a signer change "pass"** — fix the signer;
-  the validator mirrors the C reference (`SealVerify`, `SealDoubleDigest`, `_SealValidateRevoke`).
+The package is standalone (`@woss/seal-ts`, GitHub `woss/seal-ts`, MIT): no
+vendored or generated third-party code ships in it.
 
 ## Signer invariants (break these = bug)
 
@@ -32,17 +21,22 @@ MIT). Until that cutover it stays in the kelp-market workspace as `@kelp_digital
   converts raw P-1363 output. Embed `b=` windows are value/EOF-anchored precisely so
   variable-length signatures re-verify.
 
+## Verification
+
+- Native TS verifier lives in `src/verify/` (`bytes`, `ranges`, `parse`, `scan`,
+  `sig`, `dns`, `validate`); `src/seal.ts` is the typed facade. No `globalThis.SEAL`.
+- Conformance: `upstream-suite.test.ts` is a 1:1 port of upstream's `seal-tests.html`
+  vectors and must stay unmodified; `crypto-fixtures.test.ts` pins frozen
+  signer→verifier records (RSA + ECDSA) as the permanent positive-crypto anchor;
+  `roundtrip.test.ts` gates any record-building or embed change.
+- The upstream suite asserts error strings verbatim — changing a validation message is a
+  conformance break, not a wording tweak.
+- Known limitation: `da=sha224` fails closed with an explicit error (WebCrypto has no
+  SHA-224 digest or pre-hashed signature mode). Documented in `docs/docs/verifying.md`.
+
 ## Commands
 
-- `pnpm --filter @kelp_digital/seal test` — vitest (incl. `upstream-suite.test.ts`, a
-  1:1 port of upstream's `seal-tests.html`, and `vendor-pin.test.ts`).
-- `pnpm --filter @kelp_digital/seal build` — tsc + copies the vendored validator into `dist/vendor/`.
-- `pnpm --filter @kelp_digital/seal lint`.
-
-## Verify path (for DNS work)
-
-Validation resolves the signer's public key from DNS TXT at the record's `d=` domain
-(DoH chain: Google → Quad9 → Cloudflare, 5 s abort each). Known quirks — `da=sha224`
-never validates (no WebCrypto SHA-224); TXT parsing and revocation (`p=revoke`, `r=<date>`)
-are all covered by the vendored code and the upstream suite. Ops runbook for our own
-records: repo root `docs/infra/seal-dns.md`.
+- `pnpm test` — vitest (includes `upstream-suite.test.ts`, `crypto-fixtures.test.ts`,
+  `roundtrip.test.ts`). Requires Node ≥ 26 (`Uint8Array.toBase64`/`fromBase64`).
+- `pnpm build` — rslib, structure-preserving ESM (`dist/`).
+- `pnpm lint`.
