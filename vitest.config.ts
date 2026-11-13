@@ -11,8 +11,7 @@ export default defineConfig({
       provider: 'v8',
       reportsDirectory: './temp/coverage',
       include: ['src'],
-      // Vendored upstream validator is byte-pinned, not unit-covered.
-      exclude: ['src/vendor/**'],
+      exclude: ['**/*.json', '**/*.d.ts'],
       reporter: ['text', 'json'],
       thresholds: {
         statements: 100,

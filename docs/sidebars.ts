@@ -9,7 +9,6 @@ const sidebars: SidebarsConfig = {
       label: 'Guides',
       items: ['signing', 'verifying', 'keys'],
     },
-    'vendor',
   ],
 };
 

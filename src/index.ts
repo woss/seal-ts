@@ -1,9 +1,10 @@
 /**
  * SEAL (Secure Evidence Attribution Label) v1 — sign and verify.
  *
- * Verify side: vendored hackerfactor SEAL-JS validator (100% parity).
- * Sign side: spec-correct TypeScript signer producing records the
- * vendored validator authenticates byte-exactly.
+ * Verify side: native TypeScript port of the upstream SEAL-JS validator,
+ * conformance-tested against its public vector suite.
+ * Sign side: spec-correct TypeScript signer producing records any
+ * spec-conformant validator authenticates byte-exactly.
  */
 export type { SealDnsOverride, SealParsedRecord, SealValidateOptions, SealValidationResult, SealValidator } from './seal.js';
 export { seal } from './seal.js';

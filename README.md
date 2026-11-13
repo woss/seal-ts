@@ -9,8 +9,9 @@ by [Hacker Factor](https://www.hackerfactor.com/).
 
 The upstream JavaScript implementation ([hackerfactor/SEAL-JS](https://github.com/hackerfactor/SEAL-JS))
 is **validator-only**; until now a full signer existed only in C ([hackerfactor/SEAL-C](https://github.com/hackerfactor/SEAL-C)).
-This package adds the missing signer in TypeScript and pairs it with the vendored upstream
-validator so what we sign is proven to authenticate, byte for byte.
+This package implements the **whole spec natively in TypeScript** — signer and verifier —
+with the verifier ported from upstream SEAL-JS and conformance-tested against its public
+vector suite.
 
 ## Status
 
@@ -28,14 +29,14 @@ pnpm add @woss/seal-ts   # once published; until then: workspace package
 ## Sign
 
 ```ts
-import { generateSealKeyPair, sealSign } from '@woss/seal-ts';
+import { generateSealKeyPair, importPrivateKey, sealSign } from '@woss/seal-ts';
 
 const kp = await generateSealKeyPair('ecdsa'); // or 'rsa'
 // publish kp.spkiB64 in DNS TXT for your domain (see "Key distribution")
 
 const signed = await sealSign(manifestBytes, {
   domain: 'example.com',
-  key: kp.key,
+  key: await importPrivateKey(kp.pkcs8B64, kp.alg),
   alg: 'ecdsa',
   id: 'account-42', // optional; emitted as id= and uid= (spec §uid)
   sigFormat: 'hex', // or 'base64' (default)
@@ -63,9 +64,16 @@ const results = await seal.validateBuffer(bytes, filename, {
 // results[i].valid, .auth, .revoked, .error
 ```
 
-The verify side is the upstream validator vendored **verbatim** (sha256-pinned by test),
-so verification behaves identically to `sealtool`/SEAL-JS, including quirks
-(`da=sha224` records can never validate — no WebCrypto SHA-224).
+The verify side is a native TypeScript port of the upstream validator, conformance-tested
+against its public vector suite. It behaves identically to `sealtool`/SEAL-JS, including
+quirks (`da=sha224` records fail closed — WebCrypto has no SHA-224).
+
+### Trust: `valid` vs `auth`
+
+`valid: true` means the signature verified against the key that was used. For records
+carrying an inline `pk=`, that key is the record's own — a self-signed record can be
+`valid: true` with `auth: false`. Treat a record as bound to its domain only when
+`valid && auth` (`auth: true` = the DNS-published key covered the signature).
 
 ## Keys
 
@@ -85,13 +93,14 @@ revocation fields (`r=<YYYYMMDDhhmmss>` or `r=revoke`, `p=revoke`).
 pnpm test
 ```
 
-- `upstream-suite.test.ts` — 1:1 port of upstream `seal-tests.html` against the vendored validator.
+- `upstream-suite.test.ts` — 1:1 port of upstream `seal-tests.html` against the native verifier.
 - `roundtrip.test.ts` — what we sign must authenticate, across text/JPEG/PNG, rsa/ecdsa.
-- `vendor-pin.test.ts` — the vendored validator stays byte-identical to the pinned upstream commit.
+- `crypto-fixtures.test.ts` — frozen signer records (RSA + ECDSA, proven against upstream
+  at capture time) validating with the native verifier.
 
 ## License
 
-MIT — see [LICENSE](LICENSE). The vendored validator is
-[hackerfactor/SEAL-JS](https://github.com/hackerfactor/SEAL-JS) (MIT), reproduced verbatim
-with provenance header. SEAL is designed by Hacker Factor; this is an independent implementation
-of the [open specification](https://github.com/hackerfactor/SEAL).
+MIT — see [LICENSE](LICENSE). The verifier is a TypeScript port of
+[hackerfactor/SEAL-JS](https://github.com/hackerfactor/SEAL-JS) (MIT); upstream attribution
+retained in [LICENSE](LICENSE). SEAL is designed by Hacker Factor; this is an independent
+implementation of the [open specification](https://github.com/hackerfactor/SEAL).
