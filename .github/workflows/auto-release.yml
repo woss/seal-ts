@@ -1,0 +1,39 @@
+name: Auto Release
+
+# Zero-touch releases: every merge to main bumps the version from commit
+# subjects (feat=minor, fix/perf=patch, !/BREAKING CHANGE=major), commits the
+# bump + CHANGELOG straight to main, pushes the semver tag, and tags trigger
+# release.yml (gates + npm/JSR publish). No release PR, no release-please.
+#
+# The tag push must be a HUMAN actor: JSR trusted publishing rejects bot
+# tokens. The checkout below persists RELEASE_PAT as the git credential, so
+# the pushes in this workflow authenticate as the PAT owner. A regular
+# GITHUB_TOKEN (bot actor) would pass npm but fail the JSR publish.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: auto-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          token: ${{ secrets.RELEASE_PAT }}
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 26
+      - run: pnpm install --frozen-lockfile
+      - name: Bump version, commit, tag, push
+        run: node scripts/auto-release.mjs
