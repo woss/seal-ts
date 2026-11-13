@@ -80,6 +80,10 @@ describe("main() integration (temp repo, dry-run)", () => {
     const g = (cmd: string) =>
       execSync(`git ${cmd}`, { cwd: dir, encoding: "utf8" });
     g("init -q");
+    // In identity-less mode the fixture's own commits still need an author on
+    // CI runners (no global identity) — carry it inline, leaving the repo
+    // itself without any configured identity for the script under test.
+    const ident = identity ? "" : "-c user.name=t -c user.email=t@t";
     if (identity) {
       g("config user.name t");
       g("config user.email t@t");
