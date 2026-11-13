@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/woss/seal-ts/compare/v0.2.0...v0.3.0) (2026-11-13)
+
+
+### Features
+
+* native TypeScript verifier — remove vendored SEAL-JS ([5693da5](https://github.com/woss/seal-ts/commit/5693da586d6ddbfd3860e54691b865ea3cc56fb8))
+
 ## [0.2.0](https://github.com/woss/seal-ts/compare/v0.1.0...v0.2.0) (2026-11-11)
 
 
