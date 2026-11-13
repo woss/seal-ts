@@ -1,18 +1,18 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
     globals: true,
-    environment: 'node',
-    include: ['src/**/*.test.ts'],
-    reporters: ['default', 'blob'],
-    outputFile: { blob: 'coverage/blob/report.json' },
+    environment: "node",
+    include: ["src/**/*.test.ts", "scripts/**/*.test.ts"],
+    reporters: ["default", "blob"],
+    outputFile: { blob: "coverage/blob/report.json" },
     coverage: {
-      provider: 'v8',
-      reportsDirectory: './temp/coverage',
-      include: ['src'],
-      exclude: ['**/*.json', '**/*.d.ts'],
-      reporter: ['text', 'json'],
+      provider: "v8",
+      reportsDirectory: "./temp/coverage",
+      include: ["src"],
+      exclude: ["**/*.json", "**/*.d.ts"],
+      reporter: ["text", "json"],
       thresholds: {
         statements: 100,
         branches: 100,
