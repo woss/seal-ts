@@ -1,6 +1,6 @@
 /**
- * WebCrypto primitives for SEAL signing — exact inverses of the vendored
- * validator's verify path (RSASSA-PKCS1-v1_5 / ECDSA P-256, SHA-256 only).
+ * WebCrypto primitives for SEAL signing — the sign-side inverses of the
+ * verify path (RSASSA-PKCS1-v1_5 / ECDSA P-256, SHA-256 only).
  */
 
 import type { SealKeyAlg } from './keyutil.js';

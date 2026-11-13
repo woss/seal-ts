@@ -321,7 +321,7 @@ describe('decodeSig — base64', () => {
   it('decodes base64 and url-safe base64', () => {
     const s = seal._decodeSig('aGVsbG8=', 'base64');
     expect(s.error).toBe(null);
-    expect(Array.from(s.sigBytes)).toEqual([104, 101, 108, 108, 111]);
+    expect(Array.from(s.sigBytes!)).toEqual([104, 101, 108, 108, 111]);
     expect(s.timestamp).toBe(null);
     expect(seal._decodeSig('aGVs-G8_', 'base64').error).toBe(null);
   });
@@ -330,9 +330,9 @@ describe('decodeSig — base64', () => {
 describe('decodeSig — hex', () => {
   it('decodes lower and upper hex, rejects invalid', () => {
     const s = seal._decodeSig('68656c6c6f', 'hex');
-    expect(Array.from(s.sigBytes)).toEqual([104, 101, 108, 108, 111]);
+    expect(Array.from(s.sigBytes!)).toEqual([104, 101, 108, 108, 111]);
     const S = seal._decodeSig('68656C6C6F', 'HEX');
-    expect(Array.from(S.sigBytes)).toEqual([104, 101, 108, 108, 111]);
+    expect(Array.from(S.sigBytes!)).toEqual([104, 101, 108, 108, 111]);
     expect(typeof seal._decodeSig('6865zz', 'hex').error).toBe('string');
   });
 });
@@ -341,7 +341,7 @@ describe('decodeSig — date prefix', () => {
   it('extracts timestamps', () => {
     const s = seal._decodeSig('20241001120000:aGVsbG8=', 'date:base64');
     expect(s.timestamp).toBe('20241001120000');
-    expect(Array.from(s.sigBytes)).toEqual([104, 101, 108, 108, 111]);
+    expect(Array.from(s.sigBytes!)).toEqual([104, 101, 108, 108, 111]);
     const s3 = seal._decodeSig('20241001120000.123:aGVsbG8=', 'date3:base64');
     expect(s3.timestamp).toBe('20241001120000.123');
     expect(typeof seal._decodeSig('2024:aGVsbG8=', 'date:base64').error).toBe('string');

@@ -1,32 +1,13 @@
 /**
  * SEAL signer — builds `<seal ... />` records and embeds them in JPEG
  * (APP8 segment with the spec's "SEAL\0" label), PNG (seAl chunk), or
- * appends to text formats, producing files the vendored validator
- * authenticates byte-exactly.
+ * appends to text formats, producing records any spec-conformant
+ * validator authenticates byte-exactly.
  */
-// Side-effect import: registers the vendored validator on globalThis.
-import '../seal.js';
-
+import { computeByteRanges } from '../verify/ranges.js';
+import { detectFormat } from '../verify/scan.js';
 import { sha256, signPreImage } from './crypto.js';
 import { type SealKeyAlg, toB64 } from './keyutil.js';
-
-interface SealApi {
-  detectFormat(bytes: Uint8Array): string;
-  _computeByteRanges(
-    bSpec: string,
-    fileLen: number,
-    sigStart: number,
-    sigEnd: number,
-    prevStart: number,
-    prevEnd: number,
-  ): { ranges: Array<[number, number]>; error: string | null };
-}
-
-// Vendored validator registers itself on globalThis (browser-script heritage).
-// The side-effect import of '../seal.js' has run synchronously before any
-// call into this module, so SEAL is always present at the call sites below.
-const sealGlobal = globalThis as unknown as { SEAL?: SealApi };
-const SEAL = sealGlobal.SEAL as SealApi;
 
 /** Options for {@link sealSign}: identity, key, timestamp, and encodings. */
 export interface SealSignOptions {
@@ -192,7 +173,7 @@ export async function sealSign(container: Uint8Array, opts: SealSignOptions): Pr
     );
   }
 
-  const format = SEAL.detectFormat(container);
+  const format = detectFormat(container);
   let embed: (bytes: Uint8Array, record: string) => EmbedResult;
   let formatName: SealSignature['format'];
   if (format === 'jpeg') {
@@ -230,10 +211,11 @@ export async function sealSign(container: Uint8Array, opts: SealSignOptions): Pr
   const sigStart = recStart + headLen;
   const sigEnd = sigStart + ts.length + 1 + placeholder.length;
 
-  const r1 = SEAL._computeByteRanges(spec, first.bytes.length, sigStart, sigEnd, 0, 0);
   // Spec is built from validated offsets (recStart ≤ sigStart < sigEnd ≤ file
   // length, only legal grammar chars) — computeByteRanges can never reject it.
-  const ranges = r1.ranges as Array<[number, number]>;
+  const r1 = computeByteRanges(spec, first.bytes.length, sigStart, sigEnd, 0, 0);
+  if (r1.error || !r1.ranges) {throw new Error(`signer built an invalid b= spec: ${r1.error}`);}
+  const ranges = r1.ranges;
   let totalLen = 0;
   for (const [s, e] of ranges) {
     totalLen += e - s;

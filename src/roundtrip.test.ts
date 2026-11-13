@@ -1,5 +1,5 @@
 /**
- * Signer ↔ vendored-validator round trip: what we sign must authenticate.
+ * Signer ↔ native-verifier round trip: what we sign must authenticate.
  * Uses dnsOverride with the exported SPKI key so no network is touched.
  */
 import { describe, expect, it } from 'vitest';
